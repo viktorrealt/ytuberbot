@@ -5,29 +5,20 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 
-/**
- * Created by admin on 9/15/16.
- */
 public class Main {
     public static void main(String[] args) throws Exception{
         String url = "https://ytuber.ru/";
         String youtubeURL = "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Fapp%3Ddesktop%26action_handle_signin%3Dtrue%26next%3D%252F%26hl%3Dru%26feature%3Dsign_in_button&hl=ru&passive=true&service=youtube&uilel=3#identifier";
         String login = ""; //email here
         String password = ""; //password here
-        int countPerPage = 12;
+        String youtubePassword = ""; //Youtube Password
+        int countPerPage = 12; //Количество видео на 1 странице
+        int totalPagesCount = 20; //Количество страниц с видео
+        ArrayList<String> listOfUrls = makeUrlForDriver(url, totalPagesCount, countPerPage); //Список URL по страницам
         WebDriver driver = new FirefoxDriver();
-        driver.navigate().to(youtubeURL);
-        //WebElement youtbeLoginButton = driver.findElement(By.xpath("/html/body/div[2]/div[2]/div[2]/div/div[2]/"));
-        //youtbeLoginButton.click();
-        WebElement youtubeEmailForm = driver.findElement(By.name("Email"));
-        youtubeEmailForm.sendKeys(login);
-        youtubeEmailForm.submit();
-        Thread.sleep(200);
-        WebElement youtubePasswordForm = driver.findElement(By.name("Passwd"));
-        youtubePasswordForm.sendKeys(""); //pass from youtube here
-        youtubePasswordForm.submit();
+        authorizeOnYoutube(youtubeURL, login, youtubePassword, driver);
         driver.navigate().to(url);
         WebElement loginField = driver.findElement(By.name("mail"));
         loginField.sendKeys(login);
@@ -37,17 +28,23 @@ public class Main {
         submitButton.click();
         WebElement ytTasks = driver.findElement(By.linkText("Выполнять задачи"));
         ytTasks.click();
+        Thread.sleep(400);
         WebElement ytViews = driver.findElement(By.linkText("YT Просмотры"));
         ytViews.click();
         WebDriverWait wait = new WebDriverWait(driver, 40);
-
-        wait.until(ExpectedConditions.urlToBe("https://ytuber.ru/yt/view"));
-        for (int i = 1; i <= countPerPage; i++)
+        for (int i = 0; i < totalPagesCount; i++)
         {
-            WebElement videoURL = driver.findElement(By.xpath("//tr[" + i + "]/td[3]/a[@onclick]"));
-            videoURL.click();
-            Thread.sleep(45000);
+            driver.navigate().to(listOfUrls.get(i));
+            wait.until(ExpectedConditions.urlContains("https://ytuber.ru/yt/view"));
+            clickVideoUrls(countPerPage, driver, 45000); //Вызов класса для прокликивания видео, передаем кол-во видео на странице и драйвер
         }
+
+
+        //WebElement youtbeLoginButton = driver.findElement(By.xpath("/html/body/div[2]/div[2]/div[2]/div/div[2]/"));
+        //youtbeLoginButton.click();
+
+
+
 
 
         //WebDriverWait wait = new WebDriverWait(driver, 40);
@@ -56,6 +53,37 @@ public class Main {
         //System.out.println(link.getText());
         driver.quit();
 
+    }
+    private static void clickVideoUrls (int countPerPage, WebDriver driver, int timeout) throws Exception {
+        for (int i = 1; i <= countPerPage; i++) {
+            WebElement videoURL = driver.findElement(By.xpath("//tr[" + i + "]/td[3]/a[@onclick]"));
+            videoURL.click();
+            Thread.sleep(timeout);
+        }
+    }
+
+    private static ArrayList<String> makeUrlForDriver(String url, int totalPagesCount, int countPerPage) throws Exception
+    {
+        ArrayList<String> list = new ArrayList<String>();
+        for(int i = 1; i <= totalPagesCount; i++)
+        {
+            int temp = i*countPerPage;
+            url = url + "yt/view/" + temp;
+            list.add(url);
+        }
+        return list;
+    }
+
+    public static void authorizeOnYoutube(String youtubeURL, String login, String youtubePassword, WebDriver driver) throws Exception
+    {
+        driver.navigate().to(youtubeURL);
+        WebElement youtubeEmailForm = driver.findElement(By.name("Email"));
+        youtubeEmailForm.sendKeys(login);
+        youtubeEmailForm.submit();
+        Thread.sleep(200);
+        WebElement youtubePasswordForm = driver.findElement(By.name("Passwd"));
+        youtubePasswordForm.sendKeys(youtubePassword); //pass from youtube here
+        youtubePasswordForm.submit();
     }
 
 }
